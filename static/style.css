@@ -1,0 +1,5 @@
+body { background: #f5f7fb; }
+.card { border: 0; box-shadow: 0 1px 4px rgba(0, 0, 0, .08); }
+.stat-number { font-size: 1.8rem; font-weight: 700; }
+.short-url { font-family: monospace; }
+.center-box { max-width: 420px; margin: 6vh auto; }

@@ -1,0 +1,6 @@
+url,alias
+https://example.com/a,alpha
+not-a-url,beta
+https://example.com/c,summer
+https://example.com/d,login
+
