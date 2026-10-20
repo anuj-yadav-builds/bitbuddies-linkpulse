@@ -1,0 +1,15 @@
+{% extends 'base_public.html' %}
+{% block title %}Link status - LinkPulse{% endblock %}
+{% block content %}
+<div class="card p-4 center-box text-center">
+  {% if kind == 'expired' %}
+    <h4>Link expired</h4><p class="text-muted mb-0">This link is no longer active.</p>
+  {% elif kind == 'disabled' %}
+    <h4>Link disabled</h4><p class="text-muted mb-0">This link was disabled by an administrator.</p>
+  {% elif kind == 'limit' %}
+    <h4>Click limit reached</h4><p class="text-muted mb-0">This link has reached its maximum clicks.</p>
+  {% else %}
+    <h4>Link not found</h4><p class="text-muted mb-0">Check the address and try again.</p>
+  {% endif %}
+</div>
+{% endblock %}

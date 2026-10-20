@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import badge %}
+{% block title %}Dashboard - LinkPulse{% endblock %}
+{% block content %}
+<h3 class="mb-3">Analytics Dashboard</h3>
+<div class="row g-3 mb-4">
+  {% for label, value, cls in [('Total Links', stats.links, ''), ('Total Clicks', stats.clicks, ''),
+                               ('Active Links', stats.active, ''), ('Alerts', stats.alerts, 'text-danger')] %}
+  <div class="col-6 col-md-3"><div class="card p-3">
+    <div class="text-muted">{{ label }}</div>
+    <div class="stat-number {{ cls }}">{{ value }}</div>
+  </div></div>
+  {% endfor %}
+</div>
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card p-3"><h6>Clicks this week</h6><canvas id="dailyChart" height="110"></canvas></div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card p-3">
+      <h6>Link alerts</h6>
+      {% for l in links if l.status != 'active' %}
+      <div class="d-flex justify-content-between border-bottom py-2">
+        <span class="short-url">/{{ l.code }}</span>{{ badge(l.status) }}
+      </div>
+      {% else %}<p class="text-muted mb-0">No alerts</p>{% endfor %}
+    </div>
+  </div>
+</div>
+<div class="row g-3 mt-1">
+  <div class="col-lg-6">
+    <div class="card p-3"><h6>Campaign performance</h6>
+      <table class="table table-sm mb-0">
+        <tr><th>Campaign</th><th>Links</th><th>Clicks</th></tr>
+        {% for c in campaigns %}<tr><td>{{ c.name }}</td><td>{{ c.links }}</td><td>{{ c.clicks }}</td></tr>
+        {% else %}<tr><td colspan="3" class="text-muted">No campaigns yet</td></tr>{% endfor %}
+      </table>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card p-3"><h6>Top links</h6>
+      <table class="table table-sm mb-0">
+        <tr><th>Link</th><th>Clicks</th></tr>
+        {% for l in (links|sort(attribute='clicks', reverse=true))[:5] %}
+        <tr><td><a href="{{ url_for('link_detail', code=l.code) }}">/{{ l.code }}</a></td><td>{{ l.clicks }}</td></tr>
+        {% else %}<tr><td colspan="2" class="text-muted">No links yet</td></tr>{% endfor %}
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+new Chart(document.getElementById('dailyChart'), {
+  type: 'line',
+  data: {
+    labels: {{ stats.daily_labels|tojson }},
+    datasets: [{ label: 'Clicks', data: {{ stats.daily_values|tojson }}, borderColor: '#0d6efd', tension: .3 }]
+  }
+});
+</script>
+{% endblock %}

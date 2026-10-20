@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, badge %}
+{% block title %}Admin - LinkPulse{% endblock %}
+{% block content %}
+<h3 class="mb-3">Admin: All Links</h3>
+<div class="card mb-4"><div class="table-responsive">
+<table class="table align-middle mb-0">
+  <tr><th>Link</th><th>Destination</th><th>Status</th><th>Action</th></tr>
+  {% for l in links %}
+  <tr>
+    <td class="short-url"><a href="{{ url_for('link_detail', code=l.code) }}">/{{ l.code }}</a></td>
+    <td class="text-break">{{ l.url }}</td>
+    <td>{{ badge(l.status) }}</td>
+    <td>
+      <form method="post" action="{{ url_for('toggle_link', code=l.code) }}">
+        {{ csrf() }}
+        {% if l.status == 'disabled' %}
+        <button class="btn btn-sm btn-outline-secondary">Re-enable</button>
+        {% else %}
+        <button class="btn btn-sm btn-danger">Disable</button>
+        {% endif %}
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+</div></div>
+
+<h5>Blocked domains</h5>
+<div class="card p-3">
+  <form method="post" action="{{ url_for('add_blocklist') }}" class="row g-2 mb-3">
+    {{ csrf() }}
+    <div class="col-md-8"><input class="form-control" name="domain" placeholder="bad-site.com" required></div>
+    <div class="col-md-4"><button class="btn btn-primary w-100">Block domain</button></div>
+  </form>
+  {% for d in blocklist %}<span class="badge text-bg-dark me-1">{{ d }}</span>{% else %}
+  <span class="text-muted">No blocked domains yet.</span>{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block title %}Bulk Import - LinkPulse{% endblock %}
+{% block content %}
+<h3 class="mb-3">Bulk Import</h3>
+<div class="card p-4">
+  <p class="text-muted">Upload a CSV with the columns <code>url,alias</code>. The server checks every row,
+     imports the valid ones and lists the problems.</p>
+  <form method="post" enctype="multipart/form-data">
+    {{ csrf() }}
+    <input type="file" name="file" accept=".csv" class="form-control mb-3" required>
+    <button class="btn btn-success">Validate and import</button>
+  </form>
+</div>
+{% if report %}
+<div class="card p-4 mt-3">
+  <h5>{{ report.imported }} imported, {{ report.skipped }} skipped</h5>
+  <div class="table-responsive">
+  <table class="table table-sm">
+    <thead><tr><th>#</th><th>URL</th><th>Alias</th><th>Result</th></tr></thead>
+    <tbody>
+    {% for r in report.rows %}
+    <tr><td>{{ r.n }}</td><td class="text-break">{{ r.url }}</td><td>{{ r.alias }}</td>
+        <td class="{{ 'text-success' if r.ok else 'text-danger' }}">{{ r.result }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

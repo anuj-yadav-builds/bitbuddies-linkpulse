@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Analytics /{{ link.code }} - LinkPulse{% endblock %}
+{% block content %}
+<a href="{{ url_for('link_detail', code=link.code) }}">&larr; Back</a>
+<h3 class="my-3">Analytics for /{{ link.code }}</h3>
+<div class="row g-3">
+  <div class="col-12"><div class="card p-3">
+    <h6>Clicks over time</h6><canvas id="daily" height="90"></canvas>
+  </div></div>
+  <div class="col-md-4"><div class="card p-3"><h6>Devices</h6><canvas id="devices"></canvas></div></div>
+  <div class="col-md-4"><div class="card p-3"><h6>Browsers</h6><canvas id="browsers"></canvas></div></div>
+  <div class="col-md-4"><div class="card p-3"><h6>Traffic sources</h6><canvas id="refs"></canvas></div></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const colors = ['#0d6efd', '#20c997', '#ffc107', '#dc3545', '#6f42c1'];
+function donut(id, obj) {
+  new Chart(document.getElementById(id), {
+    type: 'doughnut',
+    data: { labels: Object.keys(obj), datasets: [{ data: Object.values(obj), backgroundColor: colors }] }
+  });
+}
+new Chart(document.getElementById('daily'), {
+  type: 'line',
+  data: {
+    labels: {{ stats.daily_labels|tojson }},
+    datasets: [{ label: 'Clicks', data: {{ stats.daily_values|tojson }}, borderColor: '#0d6efd', tension: .3 }]
+  }
+});
+donut('devices', {{ stats.devices|tojson }});
+donut('browsers', {{ stats.browsers|tojson }});
+donut('refs', {{ stats.referrers|tojson }});
+</script>
+{% endblock %}

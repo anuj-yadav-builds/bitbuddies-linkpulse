@@ -1,0 +1,9 @@
+{# Shared helpers. Import them in a page with:  {% from '_macros.html' import csrf, badge %} #}
+{% macro csrf() -%}
+{% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+{%- endmacro %}
+
+{% macro badge(status) -%}
+{% set colors = {'active': 'success', 'expired': 'warning', 'disabled': 'danger', 'limit_reached': 'secondary'} %}
+<span class="badge text-bg-{{ colors.get(status, 'secondary') }}">{{ status|replace('_', ' ') }}</span>
+{%- endmacro %}

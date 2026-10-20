@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, badge %}
+{% block title %}/{{ link.code }} - LinkPulse{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h3 class="short-url mb-0">/{{ link.code }}</h3>
+    <div class="text-muted text-break">{{ link.url }}</div>
+  </div>
+  <span class="fs-5">{{ badge(link.status) }}</span>
+</div>
+<div class="row g-3">
+  <div class="col-md-8">
+    <div class="card p-3">
+      <div class="row text-center">
+        <div class="col"><div class="text-muted">Clicks</div>
+          <div class="stat-number">{{ link.clicks }}</div></div>
+        <div class="col"><div class="text-muted">Unique</div>
+          <div class="stat-number">{{ link.unique }}</div></div>
+        <div class="col"><div class="text-muted">Expires</div>
+          <div class="stat-number fs-5">{{ link.expires }}</div></div>
+      </div>
+      <hr>
+      <p class="mb-1"><b>Campaign:</b> {{ link.campaign }}</p>
+      <p><b>Tags:</b>
+        {% for t in link.tags %}<span class="badge text-bg-secondary me-1">{{ t }}</span>
+        {% else %}none{% endfor %}</p>
+      <div class="d-flex gap-2">
+        <a class="btn btn-primary" href="{{ url_for('analytics', code=link.code) }}">View analytics</a>
+        {% if user.role == 'admin' %}
+        <form method="post" action="{{ url_for('toggle_link', code=link.code) }}"
+              onsubmit="return confirm('Change the status of this link? Redirects change immediately.')">
+          {{ csrf() }}
+          {% if link.status == 'disabled' %}
+          <button class="btn btn-outline-success">Re-enable link</button>
+          {% else %}
+          <button class="btn btn-outline-danger">Disable link</button>
+          {% endif %}
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-3 text-center">
+      <h6>QR code</h6>
+      <div id="qr" class="d-flex justify-content-center my-2"></div>
+      <button type="button" class="btn btn-outline-primary btn-sm" id="dl">Download PNG</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+// "?src=qr" lets the backend count QR scans separately from normal clicks.
+const shortUrl = '{{ request.host_url }}{{ link.code }}';
+new QRCode(document.getElementById('qr'), { text: shortUrl + '?src=qr', width: 180, height: 180 });
+document.getElementById('dl').addEventListener('click', () => {
+  const canvas = document.querySelector('#qr canvas');
+  const img = document.querySelector('#qr img');
+  const a = document.createElement('a');
+  a.href = canvas ? canvas.toDataURL('image/png') : img.src;
+  a.download = '{{ link.code }}-qr.png';
+  a.click();
+});
+</script>
+{% endblock %}

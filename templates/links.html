@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import badge %}
+{% block title %}My Links - LinkPulse{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>My Links</h3>
+  <a class="btn btn-primary" href="{{ url_for('new_link') }}">+ New Link</a>
+</div>
+<div class="row g-2 mb-3">
+  <div class="col-md-8"><input id="search" class="form-control" placeholder="Search by alias or URL"></div>
+  <div class="col-md-4">
+    <select id="statusFilter" class="form-select">
+      <option value="">All statuses</option>
+      <option value="active">active</option>
+      <option value="expired">expired</option>
+      <option value="disabled">disabled</option>
+      <option value="limit_reached">limit reached</option>
+    </select>
+  </div>
+</div>
+<div class="card"><div class="table-responsive">
+<table class="table align-middle mb-0" id="linkTable">
+  <thead><tr>
+    <th>Short URL</th><th>Destination</th><th>Campaign</th><th>Clicks</th><th>Status</th><th></th>
+  </tr></thead>
+  <tbody>
+  {% for l in links %}
+  <tr data-status="{{ l.status }}" data-search="{{ (l.code ~ ' ' ~ l.url)|lower }}">
+    <td class="short-url text-nowrap">
+      <a href="{{ url_for('link_detail', code=l.code) }}">/{{ l.code }}</a>
+      <button type="button" class="btn btn-sm btn-outline-secondary ms-1 copy-btn"
+              data-url="{{ request.host_url }}{{ l.code }}">Copy</button>
+    </td>
+    <td class="text-truncate" style="max-width: 260px">{{ l.url }}</td>
+    <td>{{ l.campaign }}</td>
+    <td>{{ l.clicks }}</td>
+    <td>{{ badge(l.status) }}</td>
+    <td><a class="btn btn-sm btn-outline-primary" href="{{ url_for('analytics', code=l.code) }}">Analytics</a></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6" class="text-muted text-center py-4">No links yet. Create your first one.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div></div>
+{% endblock %}
+{% block scripts %}
+<script>
+const rows = document.querySelectorAll('#linkTable tbody tr[data-status]');
+function applyFilter() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const s = document.getElementById('statusFilter').value;
+  rows.forEach(r => {
+    const okText = r.dataset.search.includes(q);
+    const okStatus = !s || r.dataset.status === s;
+    r.style.display = okText && okStatus ? '' : 'none';
+  });
+}
+document.getElementById('search').addEventListener('input', applyFilter);
+document.getElementById('statusFilter').addEventListener('change', applyFilter);
+document.querySelectorAll('.copy-btn').forEach(b => b.addEventListener('click', () => {
+  navigator.clipboard.writeText(b.dataset.url);
+  b.innerText = 'Copied';
+  setTimeout(() => b.innerText = 'Copy', 1500);
+}));
+</script>
+{% endblock %}

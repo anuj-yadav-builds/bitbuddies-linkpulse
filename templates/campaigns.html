@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block title %}Campaigns - LinkPulse{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h3>Campaigns</h3>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#cm">+ New Campaign</button>
+</div>
+<div class="row g-3">
+  {% for c in campaigns %}
+  <div class="col-md-4"><div class="card p-3">
+    <h5>{{ c.name }}</h5>
+    <div class="text-muted">{{ c.links }} links</div>
+    <div class="stat-number">{{ c.clicks }} <small class="fs-6 text-muted">clicks</small></div>
+  </div></div>
+  {% else %}
+  <p class="text-muted">No campaigns yet. Create one to group your links.</p>
+  {% endfor %}
+</div>
+<div class="modal fade" id="cm"><div class="modal-dialog"><div class="modal-content p-3">
+  <h5>New campaign</h5>
+  <form method="post" action="{{ url_for('new_campaign') }}">
+    {{ csrf() }}
+    <input class="form-control my-3" name="name" placeholder="Campaign name" maxlength="80" required>
+    <button class="btn btn-primary">Save</button>
+  </form>
+</div></div></div>
+{% endblock %}

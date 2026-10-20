@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block title %}New Link - LinkPulse{% endblock %}
+{% block content %}
+<h3 class="mb-3">Create Short Link</h3>
+<div class="card p-4" style="max-width: 720px">
+  <div class="progress mb-4" style="height: 6px"><div id="bar" class="progress-bar" style="width: 50%"></div></div>
+  <form method="post" id="wizard" novalidate>
+    {{ csrf() }}
+    <div id="step1">
+      <h5>Step 1: Destination and alias</h5>
+      <label class="form-label mt-2" for="url">Destination URL</label>
+      <input class="form-control" name="url" id="url" placeholder="https://example.com/page" autocomplete="off">
+      <div id="urlMsg" class="form-text"></div>
+      <label class="form-label mt-3" for="alias">Custom alias (optional)</label>
+      <div class="input-group">
+        <span class="input-group-text">{{ request.host_url }}</span>
+        <input class="form-control" name="alias" id="alias" placeholder="auto-generated if empty" autocomplete="off">
+      </div>
+      <div id="aliasMsg" class="form-text"></div>
+      <button type="button" class="btn btn-primary mt-4" id="toStep2">Next</button>
+    </div>
+    <div id="step2" class="d-none">
+      <h5>Step 2: Options and review</h5>
+      <div class="row g-3 mt-1">
+        <div class="col-md-6"><label class="form-label">Expiry date</label>
+          <input type="date" class="form-control" name="expires" id="expires"></div>
+        <div class="col-md-6"><label class="form-label">Click limit</label>
+          <input type="number" min="1" class="form-control" name="click_limit" placeholder="Unlimited"></div>
+        <div class="col-md-6"><label class="form-label">Password (optional)</label>
+          <input type="password" class="form-control" name="password" autocomplete="new-password"></div>
+        <div class="col-md-6"><label class="form-label">Campaign</label>
+          <select class="form-select" name="campaign">
+            <option value="">None</option>
+            {% for c in campaigns %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+          </select></div>
+        <div class="col-12"><label class="form-label">Tags (comma separated)</label>
+          <input class="form-control" name="tags" placeholder="sale, social"></div>
+      </div>
+      <div class="alert alert-light border mt-4">
+        <strong>Review</strong>
+        <div id="review" class="small mt-1"></div>
+        <ul id="warnings" class="text-danger small mb-0 mt-2"></ul>
+      </div>
+      <button type="button" class="btn btn-outline-secondary" id="back">Back</button>
+      <button type="submit" class="btn btn-success" id="createBtn">Create link</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const $ = id => document.getElementById(id);
+const RESERVED = ['login', 'logout', 'register', 'dashboard', 'links', 'new', 'campaigns',
+                  'import', 'admin', 'api', 'static', 'preview'];
+
+function validUrl(v) {
+  try { const u = new URL(v); return u.protocol === 'http:' || u.protocol === 'https:'; }
+  catch (e) { return false; }
+}
+function setMsg(el, text, ok) {
+  el.innerText = text;
+  el.className = 'form-text ' + (ok ? 'text-success' : 'text-danger');
+}
+
+$('url').addEventListener('input', () => {
+  validUrl($('url').value.trim())
+    ? setMsg($('urlMsg'), 'Valid URL', true)
+    : setMsg($('urlMsg'), 'Enter a full URL starting with http:// or https://', false);
+});
+
+// Returns true when the alias is empty or free. Always asks the server, so the answer is fresh.
+async function checkAlias() {
+  const a = $('alias').value.trim().toLowerCase();
+  if (!a) { $('aliasMsg').innerText = ''; return true; }
+  if (!/^[a-z0-9_-]{3,30}$/.test(a)) {
+    setMsg($('aliasMsg'), 'Use 3-30 lowercase letters, numbers, - or _', false);
+    return false;
+  }
+  if (RESERVED.includes(a)) { setMsg($('aliasMsg'), 'This alias is reserved', false); return false; }
+  const res = await fetch('/api/check-alias?alias=' + encodeURIComponent(a));
+  const data = await res.json();
+  setMsg($('aliasMsg'), data.message, data.available);
+  return data.available;
+}
+let timer;
+$('alias').addEventListener('input', () => {
+  $('alias').value = $('alias').value.toLowerCase();
+  clearTimeout(timer);
+  timer = setTimeout(checkAlias, 400);
+});
+
+// Enter key in Step 1 must go to Step 2, never submit the form early.
+$('wizard').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !$('step1').classList.contains('d-none')) {
+    e.preventDefault();
+    $('toStep2').click();
+  }
+});
+
+$('toStep2').addEventListener('click', async () => {
+  if (!validUrl($('url').value.trim())) { setMsg($('urlMsg'), 'Fix the URL before continuing', false); return; }
+  if (!(await checkAlias())) return;
+  $('step1').classList.add('d-none');
+  $('step2').classList.remove('d-none');
+  $('bar').style.width = '100%';
+  buildReview();
+});
+$('back').addEventListener('click', () => {
+  $('step2').classList.add('d-none');
+  $('step1').classList.remove('d-none');
+  $('bar').style.width = '50%';
+});
+
+function addWarning(text) {
+  const li = document.createElement('li');
+  li.textContent = text;
+  $('warnings').appendChild(li);
+}
+async function buildReview() {
+  $('review').textContent = $('url').value.trim() + '  ->  /' + ($('alias').value || '(auto-generated)');
+  $('warnings').innerHTML = '';
+  $('createBtn').disabled = false;
+  const exp = $('expires').value;
+  const today = new Date().toISOString().slice(0, 10);
+  if (exp && exp < today) addWarning('Expiry date is in the past, the link will not work.');
+  if (!exp) addWarning('No expiry set. The link will stay active forever.');
+  const res = await fetch('/api/check-url?url=' + encodeURIComponent($('url').value.trim()));
+  const data = await res.json();
+  if (!data.safe) { addWarning(data.message); $('createBtn').disabled = true; }
+}
+</script>
+{% endblock %}
